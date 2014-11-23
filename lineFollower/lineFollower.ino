@@ -1,5 +1,5 @@
 #include <Servo.h>
-// Note: S8 and S9 don't seem to work.
+// Note:  S8 and S9 don't seem to work.
 
 Servo left; // declare a servo to use for our left motor
 Servo right;  //declare a servo to use for our right motor
