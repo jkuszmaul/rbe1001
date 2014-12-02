@@ -21,11 +21,11 @@ Servo arm; // Arm.
 
 #define START_BUTTON 30
 
-#define ARM_MOTOR 10
+#define ARM_MOTOR 11
 #define ARM_POT 9
 
-const int kDown = -0.1;
-const int kUp = 0.2;
+const float kDown = -0.11;
+const float kUp = 0.2;
 
 // enum which we can use to indicate which side of the robot we are talking about.
 enum side {
@@ -75,14 +75,20 @@ void loop() {
     Serial.println(potToAngle(470));
     Serial.println(angleToPot(0.0));
     waitForButton(START_BUTTON);
-    goToAngle(kDown, 30.0, 5.0);
+    //arm.write(120);
+    delay(50);
+    goToAngle(kDown, 10.0);//, 2.0, 50.0);
+    delay(1000);
+    Serial.println(getAngle());
     waitForButton(START_BUTTON);
-    goToAngle(kUp, 30.0, 5.0);
+    goToAngle(kUp, 10.0, 1.0, 3.0);
+    delay(1000);
     first = false;
     start = millis();
     endTime = start + 11.6 * 1000;
     latestTime = endTime + 1*1000;
   }
+  Serial.println(getAngle());
 
 
   // Get the sensor values.
@@ -124,13 +130,14 @@ void loop() {
       while (true) continue;
     }
     writeMotors(30, 30);
-    goToAngle(kDown - 0.15, 30.0, 3.0); // Arm down = -0.8 rad; 300 analogRead.
-    writeMotors(50, 30);
+    // Go down extra far, because we will be driving anyways.
+    goToAngle(kDown - 0.15, 30.0, 3.0);
+    writeMotors(50, 25);
     delay(600);
   }
   else if (last_triggered == LEFT) {
     if (cur_triggered == NEITHER)
-      writeMotors(0, 40);
+      writeMotors(0, 40); // 30, 40
     else
       writeMotors(0, 50);
   }
@@ -169,27 +176,40 @@ double getAngle() {
 }
 
 void goToAngle(double angle/*radians*/, double kP, double kI, double kD) {
+  int millisgood = 0;
+  int startgood = 0;
+  int start = millis();
   double error = angle - getAngle();
   double prev_error = error;
   double sum = 0.0;
-  while (abs(error) > 0.02 || abs(prev_error - error) > 0.001) {
+  while ((abs(error) > 0.03) || (millisgood < 1000)) {
+    if (millis() > start + 5000) break;
     error = angle - getAngle();
     sum *= 0.99;
     sum += error;
-    double out = kP * error + kI * sum;
+    double diff = error - prev_error;
+    double out = kP * error + kI * sum + kD * diff;
     out = (out > 90) ? 90 : ((out < -90) ? -90 : out);
     Serial.print(getAngle());
     Serial.print("\t");
-    Serial.println(out);
     arm.write(90 - out);
-    prev_error = error;
     delay(10);
+    if (abs(error) > 0.03)
+      millisgood = 0;
+    else if (abs(prev_error) > 0.03)
+      startgood = millis();
+    else // error is good and has been good.
+      millisgood = millis() - startgood;
+    Serial.print(out);
+    Serial.print("\t");
+    Serial.println(millisgood);
+    prev_error = error;
   }
   arm.write(90);
 }
 
 
-// Blocks until the button on port port has gone low, then delays half a second
+  // Blocks until the button on port port has gone low, then delays half a second
 // to allow the user to get their hand away, and returns.
 void waitForButton(int port) {
   while (digitalRead(port)) continue;
