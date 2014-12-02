@@ -21,11 +21,11 @@ Servo arm; // Arm.
 
 #define START_BUTTON 30
 
-#define ARM_MOTOR 10
+#define ARM_MOTOR 11
 #define ARM_POT 9
 
-const int kDown = -0.1;
-const int kUp = 0.2;
+const double kDown = -0.0;
+const double kUp = 0.2;
 
 // enum which we can use to indicate which side of the robot we are talking about.
 enum side {
@@ -69,6 +69,7 @@ void setup() {
 }
 
 boolean first = true;
+boolean needto = true;
 void loop() {
   if (first) {
     Serial.println("HERE!!!!!");
@@ -80,7 +81,7 @@ void loop() {
     goToAngle(kUp, 30.0, 5.0);
     first = false;
     start = millis();
-    endTime = start + 11.6 * 1000;
+    endTime = start + 12.0 * 1000;
     latestTime = endTime + 1*1000;
   }
 
@@ -101,10 +102,11 @@ void loop() {
     cur_triggered = NEITHER;
   }
   // If it is too late, stop and put it down. If it is too early, don't. If it is in between, the left and right photos should be triggered.
-  else if (millis() > endTime && millis() < latestTime) {
+  else if (needto && ((!(left_photo || right_photo) && millis() > endTime && millis() > (latestTime)) || millis() > latestTime)) {
     cur_triggered = BOTH;
+    needto = false;
   }
-  else if ((!(left_photo || right_photo) && ((latestTime + 2) < millis()))) {
+  else if ((!(left_photo || right_photo) && ((latestTime + 5000) < millis()))) {
     cur_triggered = BOTH;
     last_triggered = BOTH;
   }
@@ -125,8 +127,8 @@ void loop() {
     }
     writeMotors(30, 30);
     goToAngle(kDown - 0.15, 30.0, 3.0); // Arm down = -0.8 rad; 300 analogRead.
-    writeMotors(50, 30);
-    delay(600);
+    writeMotors(50, 0);
+    delay(100);
   }
   else if (last_triggered == LEFT) {
     if (cur_triggered == NEITHER)
