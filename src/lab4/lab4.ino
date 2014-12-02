@@ -81,7 +81,7 @@ void loop() {
     goToAngle(kUp, 30.0, 5.0);
     first = false;
     start = millis();
-    endTime = start + 12.0 * 1000;
+    endTime = start + 12.5 * 1000;
     latestTime = endTime + 1*1000;
   }
 
