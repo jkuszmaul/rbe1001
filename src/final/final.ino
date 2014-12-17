@@ -1,11 +1,7 @@
 #include <PPM.h>
 #include <Servo.h>
-#include "Encoder.h"
-#include "drive.h"
 
 PPM ppm(2);
-
-Drive *drive;
 
 
 // 8 and 9 don't work.
@@ -37,10 +33,6 @@ void setup() {
   Serial.begin(115200);
 }
 
-double averageDist(Drive drivebase) {
-  return (drivebase.RightEnc() + drivebase.LeftEnc()) / 2.0;
-}
-
 void autonomous(unsigned long time) {
   while (0 == ppm.getChannel(1)) continue;
   pinMode(32, INPUT_PULLUP);
@@ -48,9 +40,6 @@ void autonomous(unsigned long time) {
   writeBlock(true);
 
   time *= 1000;
-  if (digitalRead(32)) {
-    Serial.println("Running Boring Auto.");
-
 
   dropBass(false);
   writeMotors(90, 90);
@@ -101,52 +90,9 @@ void autonomous(unsigned long time) {
   writeMotors(-40, -40);
   delay(2000);
   writeMotors(0, 0);
-  }
-  else {
-    leftm.detach();
-    rightm.detach();
-    drive = new Drive(LEFT, RIGHT, 0.0693 * PI / 360.0);
-    writeLift(false);
-    writeIntake(true);
-    writeBlock(true);
-    dropBass(false);
-    /* Going backwards...
-    dropBass(false);
-    driveArc(-0.6, -0.5);
-    driveArc(-0.6, 0.5);
-    dropBass(true);
-    driveStraight(-1.0);
-    exit(0);
-    */
-    driveArc(1.8, 20);
-    driveArc(0.06, 0.01);
-    dropBass(true);
-    driveArc(0.06, 0.01);
-    driveStraight(0.4);
-    exit(0);
-    driveArc(0.35, 0.15);
-    driveStraight(0.5);
-    driveArc(0.45, -0.2);
-    drive->Clear();
-    driveStraight(0.8);
-    driveArc(0.02, 0.01);
-    dropBass(true);
-    driveArc(0.01, 0.01);
-    driveStraight(0.4);
-    dropBass(false);
-    driveArc(-0.5, 0.7);
-
-    drive->left_.detach();
-    drive->right_.detach();
-    leftm.attach(LEFT);
-    rightm.attach(RIGHT);
-  }
 
 
   while (millis() - startTime <= time) {
-    // Run Auto!
-    //Serial.println("Autonomous");
-    //delay(50);
   }
 }
 
@@ -210,28 +156,6 @@ void teleop(unsigned long time) {
   exit(0);
 }
 
-void driveArc(double dist, double rad) {
-  drive->Arc(dist, rad);
-  while (abs(averageDist(*drive)) < abs(dist)) {
-    drive->Step();
-    delay(10);
-    Serial.print("Dist: ");
-    Serial.print(averageDist(*drive));
-    Serial.print(" ");
-  }
-}
-
-void driveStraight(double dist) {
-  drive->Straight(dist);
-  while (abs(averageDist(*drive)) < abs(dist)) {
-    drive->Step();
-    delay(10);
-    Serial.print("Dist: ");
-    Serial.print(averageDist(*drive));
-    Serial.print(" ");
-  }
-}
-
 void writeMotors(double left, double right) {
   leftm.write(left + 90);
   rightm.write(right + 90);
@@ -240,102 +164,8 @@ void writeMotors(double left, double right) {
 void loop() {
   dropBass(false);
   writeBlock(false);
-  /*
-  writeMotors(90, 90);
-  delay(1000);
-  double threshold = 450;
-  int last_left = false;
-  unsigned long endTime = millis() + 10000;
-  while (millis() < endTime) {
-    bool lefton = analogRead(LINEL) < threshold;
-    bool midon = analogRead(LINEM) < threshold;
-    bool righton = analogRead(LINER) < threshold;
-    if (midon && !lefton && !righton)
-      writeMotors(90, 90);
-    else if (midon && lefton && !righton) {
-      writeMotors(20, 90);
-    }
-    else if (midon && righton && !lefton) {
-      writeMotors(90, 20);
-    }
-    else if (lefton && !midon && !righton) {
-      writeMotors(0, 90);
-    }
-    else if (righton && !midon && !lefton) {
-      writeMotors(90, 0);
-    }
-    else if (!midon && !righton && !lefton) {
-    }
-    else // just outsides on, or all off.
-      writeMotors(90, 90);
-    Serial.print(analogRead(2));
-    Serial.print(" ");
-    Serial.print(analogRead(1));
-    Serial.print(" ");
-    Serial.print(analogRead(0));
-    Serial.print(" ");
-    Serial.println();
-    delay(100);
-  }
-  writeMotors(-90, -90);
-  delay(500);
-  writeMotors(90, -90);
-  delay(400);
-  writeIntake(true);
-  writeLift(true);
-  writeBlock(false);
-  writeMotors(90, 90);
-  delay(2000);
-  exit(0);*/
   Serial.println("Start Auto");
   autonomous(20);
   Serial.println("Start Teleop");
   teleop(180);
-  writeLift(false);
-  writeIntake(true);
-  writeBlock(true);
-  dropBass(false);
-  /* Going backwards...
-  dropBass(false);
-  driveArc(-0.6, -0.5);
-  driveArc(-0.6, 0.5);
-  dropBass(true);
-  driveStraight(-1.0);
-  exit(0);
-  */
-  driveArc(1.8, 20);
-  driveArc(0.06, 0.01);
-  dropBass(true);
-  driveArc(0.06, 0.01);
-  driveStraight(0.4);
-  exit(0);
-  driveArc(0.35, 0.15);
-  driveStraight(0.5);
-  driveArc(0.45, -0.2);
-  drive->Clear();
-  driveStraight(0.8);
-  driveArc(0.02, 0.01);
-  dropBass(true);
-  driveArc(0.01, 0.01);
-  driveStraight(0.4);
-  dropBass(false);
-  driveArc(-0.5, 0.7);
-  exit(0);
-  for (double i = 0; i < 1.0; i+=0.01) {
-    //drive->WriteMotors(i, i);
-    delay(300);
-    int rstart = drive->RightEnc();//right->read();
-    int lstart = drive->LeftEnc();//left->read();
-    delay(100);
-    int rend = drive->RightEnc();//right->read();
-    int lend = drive->LeftEnc();//left->read();
-    Serial.print(" ");
-    Serial.print(i);
-    Serial.print(" Right Vel: ");
-    Serial.print((rend - rstart) * 10);
-    Serial.print(" Left Vel: ");
-    Serial.print((lend - lstart) * 10);
-    Serial.println();
-  }
-  delay(100);
 }
