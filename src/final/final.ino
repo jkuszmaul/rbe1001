@@ -156,10 +156,6 @@ void teleop(unsigned long time) {
   dropBass(false);
   // Run until time runs out.
   while (millis() - startTime2 <= time) {
-    /*for (int i = 1; i <= 6; i++) {
-      Serial.print(ppm.getChannel(i));
-      Serial.print(" \t");
-    }*/
     // Back buttons are tied to intake and blocker respectively. Joystick
     // channels are tied straight to driving. Nothing too exciting.
     if (ppm.getChannel(5) < 30) {
@@ -177,9 +173,6 @@ void teleop(unsigned long time) {
     Serial.println();
     if (ppm.getChannel(6) < 30) writeBlock(false);
     else writeBlock(true);
-    //lift1.write(0);
-    //lift2.write(180);
-    // Run Teleop!
     leftm.write(180 - ppm.getChannel(3));
     rightm.write(180 - ppm.getChannel(2));
     delay(100);
