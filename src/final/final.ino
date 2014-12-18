@@ -1,7 +1,9 @@
 #include <PPM.h>
 #include <Servo.h>
+#include <avr/wdt.h>
 
 PPM ppm(2);
+
 
 
 // 8, 9, and 12 don't work.
@@ -11,7 +13,6 @@ PPM ppm(2);
 #define CONVEYOR1 6
 #define CONVEYOR2 7
 #define INTAKE 5
-#define BASS 4
 #define BLOCK 13
 #define LINEL 0
 #define LINEM 1
@@ -20,7 +21,6 @@ PPM ppm(2);
 Servo lift1, lift2;
 Servo intake;
 Servo block;
-Servo bass;
 Servo leftm, rightm;
 
 void setup() {
@@ -30,9 +30,11 @@ void setup() {
   leftm.attach(LEFT, 1000, 2000);
   rightm.attach(RIGHT, 1000, 2000);
   block.attach(BLOCK);
-  bass.attach(BASS);
   intake.attach(INTAKE, 1000, 2000);
   Serial.begin(115200);
+#ifndef AUTO
+  wdt_enable(WDTO_1S);
+#endif
 }
 
 // autonomous loop.
@@ -44,9 +46,6 @@ void autonomous(unsigned long time) {
 
   // Prevent balls from falling out.
   writeBlock(true);
-
-  // Keep servo in.
-  dropBass(false);
 
   time *= 1000;
 
@@ -60,6 +59,10 @@ void autonomous(unsigned long time) {
   // Spend 10 seconds line following.
   unsigned long endTime = millis() + 10000;
   while (millis() < endTime) {
+    writeBlock(true);
+#ifndef AUTO
+    wdt_reset();
+#endif
     // Check state of all line sensors. true = on line.
     bool lefton = analogRead(LINEL) < threshold;
     bool midon = analogRead(LINEM) < threshold;
@@ -144,18 +147,20 @@ void writeBlock(bool on) {
   else block.write(180);
 }
 
-void dropBass(bool drop) {
-  if (drop) bass.write(140);
-  else bass.write(0);
-}
-
 // Teleop code.
 void teleop(unsigned long time) {
   unsigned long startTime2 = millis();
   time *= 1000;
-  dropBass(false);
   // Run until time runs out.
   while (millis() - startTime2 <= time) {
+    if (ppm.getChannel(5) > 140) {
+#ifndef AUTO
+      while (true) continue;
+#endif
+    }
+#ifndef AUTO
+    else wdt_reset();
+#endif
     /*for (int i = 1; i <= 6; i++) {
       Serial.print(ppm.getChannel(i));
       Serial.print(" \t");
@@ -182,7 +187,7 @@ void teleop(unsigned long time) {
     // Run Teleop!
     leftm.write(180 - ppm.getChannel(3));
     rightm.write(180 - ppm.getChannel(2));
-    delay(100);
+    delay(50);
   }
 
   // Just exit.
@@ -195,10 +200,11 @@ void writeMotors(double left, double right) {
 }
 
 void loop() {
-  dropBass(false);
   writeBlock(false);
   Serial.println("Start Auto");
+#ifdef AUTO
   autonomous(20);
+#endif
   Serial.println("Start Teleop");
   teleop(180);
 }
